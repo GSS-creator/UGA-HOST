@@ -1,42 +1,71 @@
 # UGA HOST CLI
 
-![UGA HOST](https://img.shields.io/badge/UGA%20HOST-v1.0.0-blue)
+[![npm version](https://img.shields.io/npm/v/ugahost.svg)](https://www.npmjs.com/package/ugahost)
+[![npm downloads](https://img.shields.io/npm/dm/ugahost.svg)](https://www.npmjs.com/package/ugahost)
 ![Node.js](https://img.shields.io/badge/Node.js-Supported-green)
 ![Python](https://img.shields.io/badge/Python-Supported-green)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
 The official command-line interface for deploying backend applications to UGA HOST on QSSN PaaS.
 
-**UGA HOST** is a Platform-as-a-Service (PaaS) that allows developers to deploy Node.js and Python backend applications to the edge using Cloudflare Workers.
+**UGA HOST** is a Platform-as-a-Service (PaaS) that allows developers to deploy Node.js and Python backend applications to the edge using Cloudflare Workers with automatic database provisioning.
 
 ## 🚀 Features
 
-- ✅ **Node.js Support** - Deploy Express, Fastify, or vanilla Node.js apps
-- ✅ **Python Support** - Deploy Flask applications  
+- ✅ **Node.js Support** - Deploy Express, Fastify, Koa, or vanilla Node.js apps
+- ✅ **Python Support** - Deploy Flask, FastAPI, or Django applications  
 - ✅ **Edge Deployment** - Apps run on Cloudflare's global network
-- ✅ **Automatic Database** - Each project gets a Turso database
+- ✅ **Automatic Database** - Each project gets a free Turso database
 - ✅ **Custom Subdomains** - `your-app.gss-tec.com`
 - ✅ **Environment Variables** - Secure configuration management
 - ✅ **Real-time Logs** - Monitor your application
 - ✅ **Simple CLI** - Easy-to-use command-line interface
+- ✅ **API Key Authentication** - Secure CLI access
 
-## Installation
+## 📦 Installation
+
+Install the UGA HOST CLI globally using npm:
 
 ```bash
 npm install -g ugahost
 ```
 
-## Quick Start
+Verify installation:
 
-### 1. Login to UGA HOST
+```bash
+ugahost --version
+# Output: 1.0.0
+```
+
+## 🎯 Quick Start
+
+### 1. Create an Account & API Key
+
+1. Go to the dashboard: **https://qssnpaas.gss-tec.com**
+2. Login with GitHub
+3. Navigate to **UGA HOST** → **API Keys** tab
+4. Click **"Create API Key"**
+5. Give it a name (e.g., "My Laptop")
+6. **Copy the API key** (starts with `ugahost_`) - you'll only see it once!
+
+### 2. Login to UGA HOST
 
 ```bash
 ugahost login
 ```
 
-Enter your email and password when prompted.
+Enter your:
+- **Email**: Your GitHub email
+- **API Key**: The key you just created
 
-### 2. Initialize Your Project
+You should see:
+```
+✅ Login successful!
+Logged in as: your-email@example.com
+You can now deploy your applications with: ugahost deploy
+```
+
+### 3. Initialize Your Project
 
 ```bash
 cd your-project
@@ -46,7 +75,7 @@ ugahost init
 You'll be asked to provide:
 - Project name
 - Subdomain (your-app.gss-tec.com)
-- Language (nodejs, python, go, php, ruby, java, rust, csharp)
+- Language (nodejs or python)
 - Port number
 
 This creates a `ugahost.json` configuration file in your project.
