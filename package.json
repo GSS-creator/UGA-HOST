@@ -1,0 +1,57 @@
+{
+  "name": "ugahost",
+  "version": "1.0.1",
+  "description": "UGA HOST CLI - Deploy backend applications (Node.js, Python) to QSSN PaaS with automatic database provisioning",
+  "main": "dist/index.js",
+  "bin": {
+    "ugahost": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ugahost",
+    "paas",
+    "deployment",
+    "backend",
+    "cli",
+    "nodejs",
+    "python",
+    "cloudflare",
+    "hosting",
+    "database"
+  ],
+  "author": "Gaston Software Solutions Tec <info@gss-tec.com> (https://www.gss-tec.com)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GSS-creator/UGA-HOST.git"
+  },
+  "homepage": "https://github.com/GSS-creator/UGA-HOST",
+  "bugs": {
+    "url": "https://github.com/GSS-creator/UGA-HOST/issues",
+    "email": "info@gss-tec.com"
+  },
+  "dependencies": {
+    "archiver": "^6.0.1",
+    "axios": "^1.6.2",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "dotenv": "^16.3.1",
+    "form-data": "^4.0.0",
+    "ignore": "^5.3.0",
+    "inquirer": "^8.2.6",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/archiver": "^6.0.2",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
