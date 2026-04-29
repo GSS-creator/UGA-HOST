@@ -502,12 +502,12 @@ ugahost-cli/
 
 ### How Login Works
 
-1. Run `ugahost login`
-2. Enter email and password
-3. CLI calls authentication API
-4. Receives JWT token
-5. Saves token to `~/.ugahost/config.json`
-6. All subsequent commands use this token
+1. **Create API Key**: Go to https://qssnpaas.gss-tec.com → UGA HOST → API Keys → Create API Key
+2. **Run** `ugahost login`
+3. **Enter email and API key** (not password!)
+4. CLI validates API key with authentication API
+5. Saves credentials to `~/.ugahost/config.json`
+6. All subsequent commands use this API key for authentication
 
 ### Config File Location
 
@@ -518,8 +518,9 @@ ugahost-cli/
 
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "email": "user@example.com",
+  "email": "your-email@example.com",
+  "apiKey": "ugahost_abc123...",
+  "userId": "dev_123",
   "apiUrl": "https://qssn-paas-management.gastonsoftwaresolutions234.workers.dev"
 }
 ```
@@ -532,7 +533,7 @@ Base URL: `https://qssn-paas-management.gastonsoftwaresolutions234.workers.dev`
 
 All requests require authentication:
 ```
-Authorization: Bearer <your-token>
+Authorization: Bearer <your-api-key>
 ```
 
 #### Endpoints
