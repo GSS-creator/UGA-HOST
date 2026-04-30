@@ -1,6 +1,6 @@
 {
   "name": "ugahost",
-  "version": "1.0.1",
+  "version": "1.0.6",
   "description": "UGA HOST CLI - Deploy backend applications (Node.js, Python) to QSSN PaaS with automatic database provisioning",
   "main": "dist/index.js",
   "bin": {

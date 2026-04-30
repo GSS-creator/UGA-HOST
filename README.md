@@ -13,14 +13,16 @@ The official command-line interface for deploying backend applications to UGA HO
 ## 🚀 Features
 
 - ✅ **Node.js Support** - Deploy Express, Fastify, Koa, or vanilla Node.js apps
-- ✅ **Python Support** - Deploy Flask, FastAPI, or Django applications  
+- ✅ **Python Support** - Deploy Flask, FastAPI, or Django applications
 - ✅ **Edge Deployment** - Apps run on Cloudflare's global network
-- ✅ **Automatic Database** - Each project gets a free Turso database
+- ✅ **R2 Database** - Each project gets a JSON document store (200 MB free)
 - ✅ **Custom Subdomains** - `your-app.gss-tec.com`
 - ✅ **Environment Variables** - Secure configuration management
 - ✅ **Real-time Logs** - Monitor your application
-- ✅ **Simple CLI** - Easy-to-use command-line interface
+- ✅ **Smart Redeploy** - `ugahost deploy` updates existing projects automatically
+- ✅ **Full DB CLI** - find, insert, update, delete, migrate, export, import
 - ✅ **API Key Authentication** - Secure CLI access
+- ✅ **Free Plan** - 2 apps, 200 MB storage, 10,000 requests/day
 
 ## 📦 Installation
 
@@ -30,12 +32,35 @@ Install the UGA HOST CLI globally using npm:
 npm install -g ugahost
 ```
 
+### Upgrade to Latest Version
+
+If you already have ugahost installed, upgrade to get the latest features:
+
+```bash
+npm install -g ugahost@latest
+```
+
+Or install a specific version:
+
+```bash
+npm install -g ugahost@1.0.5
+```
+
 Verify installation:
 
 ```bash
 ugahost --version
-# Output: 1.0.0
+# Output: 1.0.5
 ```
+
+### What's New in v1.0.5
+
+- ✅ **Full Database CLI** — `ugahost db` commands (find, insert, update, delete, drop, migrate, export, import)
+- ✅ **Smart Redeploy** — `ugahost deploy` detects existing projects and redeploys instead of creating new ones
+- ✅ **Deployment Summary** — Shows project ID, version, URL and status after every deploy
+- ✅ **Better Error Messages** — Full error details shown on failure
+
+See [COMMANDS.md](./COMMANDS.md) for the complete command reference.
 
 ## 🎯 Quick Start
 
@@ -203,33 +228,94 @@ ugahost env unset API_KEY
 ### Database Management
 
 #### `ugahost db info`
-Show database information.
+Show database info and storage usage.
 
 ```bash
 ugahost db info
 ```
 
-#### `ugahost db tables`
-List all database tables.
+#### `ugahost db collections`
+List all collections in your database.
 
 ```bash
-ugahost db tables
+ugahost db collections
 ```
 
-#### `ugahost db query <sql>`
-Execute a SQL query.
+#### `ugahost db find <collection> [query]`
+Find documents in a collection.
 
 ```bash
-ugahost db query "SELECT * FROM users LIMIT 10"
-ugahost db query "CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT)"
+ugahost db find users
+ugahost db find users '{"role":"admin"}'
+ugahost db find users --json
 ```
 
-#### `ugahost db backup`
-Create a database backup.
+#### `ugahost db get <collection> <id>`
+Get one document by `_id`.
 
 ```bash
-ugahost db backup
+ugahost db get users usr_abc123
 ```
+
+#### `ugahost db insert <collection> <json>`
+Insert a new document.
+
+```bash
+ugahost db insert users '{"name":"John","email":"john@example.com"}'
+```
+
+#### `ugahost db update <collection> <query> <updates>`
+Update documents matching a query.
+
+```bash
+ugahost db update users '{"email":"john@example.com"}' '{"name":"Jane"}'
+```
+
+#### `ugahost db delete <collection> <query>`
+Delete documents matching a query.
+
+```bash
+ugahost db delete users '{"email":"john@example.com"}'
+```
+
+#### `ugahost db count <collection> [query]`
+Count documents in a collection.
+
+```bash
+ugahost db count users
+ugahost db count users '{"role":"admin"}'
+```
+
+#### `ugahost db drop <collection>`
+Drop an entire collection (asks for confirmation).
+
+```bash
+ugahost db drop sessions
+```
+
+#### `ugahost db migrate <file>`
+Run a migration JSON file — like `wrangler d1 execute`.
+
+```bash
+ugahost db migrate migrations/001_seed.json
+```
+
+#### `ugahost db export <collection>`
+Export a collection to a JSON file.
+
+```bash
+ugahost db export users
+ugahost db export users -o backup/users.json
+```
+
+#### `ugahost db import <collection> <file>`
+Import a JSON file into a collection.
+
+```bash
+ugahost db import users backup/users.json
+```
+
+> 📖 See [COMMANDS.md](./COMMANDS.md) for full details including migration file format.
 
 ## Supported Languages
 
@@ -256,12 +342,12 @@ The `ugahost.json` file stores your project configuration:
 
 ## Database
 
-Each project automatically gets a Turso database. You don't need to configure anything - it's created automatically when you deploy.
+Each project automatically gets an **R2-backed JSON document store** (like MongoDB). You get up to **200 MB** of storage per account.
 
 Access your database using:
-- The UGA HOST dashboard
+- The UGA HOST dashboard at https://qssnpaas.gss-tec.com
 - The CLI commands (`ugahost db ...`)
-- Your application code (connection details available in environment variables)
+- Your application code via `globalThis.DB` (automatically injected)
 
 ## Examples
 
@@ -430,23 +516,33 @@ ugahost deploy
 curl https://my-flask-app.gss-tec.com/
 ```
 
-### Example 3: Using Database
+### Example 3: Using the Database
 
 ```bash
-# Create table
-ugahost db query "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT)"
+# See database info and storage
+ugahost db info
+
+# List collections
+ugahost db collections
 
 # Insert data
-ugahost db query "INSERT INTO users (name, email) VALUES ('John', 'john@example.com')"
+ugahost db insert users '{"name":"John","email":"john@example.com","role":"admin"}'
 
 # Query data
-ugahost db query "SELECT * FROM users"
+ugahost db find users
+ugahost db find users '{"role":"admin"}'
 
-# List tables
-ugahost db tables
+# Update a record
+ugahost db update users '{"email":"john@example.com"}' '{"name":"Jane"}'
 
-# Get database info
-ugahost db info
+# Delete a record
+ugahost db delete users '{"email":"john@example.com"}'
+
+# Export collection to file
+ugahost db export users -o backup.json
+
+# Run a migration
+ugahost db migrate migrations/001_seed.json
 ```
 
 ## 🔧 Development
@@ -572,10 +668,13 @@ Authorization: Bearer <your-api-key>
 **A:** Code is stored in Cloudflare R2 and deployed as Cloudflare Workers.
 
 ### Q: What database do I get?
-**A:** Each project gets a Turso (SQLite) database automatically.
+**A:** Each project gets an R2-backed JSON document store (like MongoDB). Use `ugahost db` commands to manage it, or access it in your app via `globalThis.DB`.
 
 ### Q: Can I have multiple projects?
-**A:** Yes! Each project gets its own subdomain and database.
+**A:** Yes! Free plan allows **2 projects**, each with its own subdomain and database.
+
+### Q: What are the free plan limits?
+**A:** 2 apps, 200 MB R2 storage, 10,000 requests/day per account.
 
 ## 🐛 Troubleshooting
 
