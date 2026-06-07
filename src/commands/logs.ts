@@ -9,27 +9,51 @@ export async function logsCommand(options: any): Promise<void> {
   }
 
   const projectConfig = getProjectConfig();
-  if (!projectConfig || !projectConfig.projectId) {
+  if (!projectConfig?.projectId) {
     console.log(chalk.red('❌ No project found. Run: ugahost deploy first'));
     return;
   }
 
+  const limit = options.lines || 100;
+
   try {
     const api = createApiClient();
-    const { data } = await api.get(`/api/backend/projects/${projectConfig.projectId}/logs`, {
-      params: { limit: options.lines || 100 }
+    const { data } = await api.get(
+      `/api/backend/projects/${projectConfig.projectId}/logs?limit=${limit}`
+    );
+
+    const logs = data.logs || [];
+
+    if (logs.length === 0) {
+      console.log(chalk.gray('\n  No logs yet. Make some requests to your app first.\n'));
+      return;
+    }
+
+    console.log(chalk.bold.cyan(`\n📋 Logs — ${projectConfig.name || 'project'} (last ${logs.length})\n`));
+
+    logs.reverse().forEach((log: any) => {
+      const time = new Date(log.timestamp).toLocaleTimeString();
+      const level = (log.log_level || 'info').toLowerCase();
+
+      const levelStr = level === 'error' ? chalk.red('✗ ERROR') :
+                       level === 'warn'  ? chalk.yellow('⚠ WARN ') :
+                       level === 'debug' ? chalk.gray('· DEBUG') :
+                                           chalk.cyan('ℹ INFO ');
+
+      const msg = level === 'error' ? chalk.red(log.message) :
+                  level === 'warn'  ? chalk.yellow(log.message) :
+                  level === 'debug' ? chalk.gray(log.message) :
+                                      chalk.white(log.message);
+
+      console.log(`  ${chalk.gray(time)}  ${levelStr}  ${msg}`);
     });
 
-    if (data.logs && data.logs.length > 0) {
-      data.logs.forEach((log: any) => {
-        const color = log.log_level === 'error' ? chalk.red : 
-                     log.log_level === 'warn' ? chalk.yellow : chalk.white;
-        console.log(color(`[${log.timestamp}] ${log.message}`));
-      });
-    } else {
-      console.log(chalk.gray('No logs available'));
+    console.log('');
+
+    if (options.follow) {
+      console.log(chalk.gray('  Live streaming not available in this version. Re-run to refresh.\n'));
     }
   } catch (error: any) {
-    console.log(chalk.red('❌ Failed to fetch logs:'), error.message);
+    console.log(chalk.red('❌ Failed to fetch logs:'), error.response?.data?.error || error.message);
   }
 }

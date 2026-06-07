@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import inquirer from 'inquirer';
 import { getProjectConfig, isLoggedIn } from '../utils/config';
 import { createApiClient } from '../utils/api';
 
@@ -32,7 +33,7 @@ export const envCommand = {
     }
   },
 
-  async set(key: string, value: string, options: any): Promise<void> {
+  async set(key?: string, value?: string, options?: any): Promise<void> {
     if (!isLoggedIn()) {
       console.log(chalk.red('❌ Not logged in'));
       return;
@@ -44,15 +45,59 @@ export const envCommand = {
       return;
     }
 
+    // If key or value not provided, prompt for them
+    let envKey = key;
+    let envValue = value;
+    let isSecret = options?.secret || false;
+
+    if (!envKey || !envValue) {
+      const answers = await inquirer.prompt([
+        {
+          type: 'input',
+          name: 'key',
+          message: 'Variable name:',
+          when: !envKey,
+          validate: (input: string) => {
+            if (!input.trim()) return 'Variable name is required';
+            if (!/^[A-Z_][A-Z0-9_]*$/i.test(input)) {
+              return 'Variable name must start with a letter or underscore and contain only letters, numbers, and underscores';
+            }
+            return true;
+          }
+        },
+        {
+          type: 'input',
+          name: 'value',
+          message: 'Value:',
+          when: !envValue,
+          validate: (input: string) => {
+            if (!input) return 'Value is required';
+            return true;
+          }
+        },
+        {
+          type: 'confirm',
+          name: 'secret',
+          message: 'Mark as secret? (will be hidden in logs)',
+          default: false,
+          when: !options?.secret
+        }
+      ]);
+
+      envKey = envKey || answers.key;
+      envValue = envValue || answers.value;
+      isSecret = options?.secret || answers.secret || false;
+    }
+
     try {
       const api = createApiClient();
       await api.post(`/api/backend/projects/${projectConfig.projectId}/env`, {
-        key,
-        value,
-        is_secret: options.secret || false
+        key: envKey,
+        value: envValue,
+        is_secret: isSecret
       });
       
-      console.log(chalk.green(`✅ Set ${key}`));
+      console.log(chalk.green(`✅ Set ${envKey}${isSecret ? ' (secret)' : ''}`));
     } catch (error: any) {
       console.log(chalk.red('❌ Failed:'), error.message);
     }

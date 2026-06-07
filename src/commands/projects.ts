@@ -11,27 +11,28 @@ export async function projectsCommand(): Promise<void> {
   try {
     const api = createApiClient();
     const { data } = await api.get('/api/backend/projects');
-    
-    if (data.projects && data.projects.length > 0) {
-      console.log(chalk.cyan('\n📦 Your Projects:\n'));
-      
-      data.projects.forEach((project: any) => {
-        const statusColor = project.status === 'running' ? chalk.green : 
-                           project.status === 'stopped' ? chalk.yellow : 
-                           chalk.gray;
-        
-        console.log(chalk.white(`  ${project.name}`));
-        console.log(chalk.gray(`    URL: https://${project.subdomain}.gss-tec.com`));
-        console.log(chalk.gray(`    Language: ${project.language}`));
-        console.log(chalk.gray(`    Status: ${statusColor(project.status)}`));
-        console.log(chalk.gray(`    Created: ${new Date(project.created_at).toLocaleDateString()}`));
-        console.log('');
-      });
-      
-      console.log(chalk.gray(`Total: ${data.projects.length} project(s)`));
-    } else {
-      console.log(chalk.gray('\nNo projects found. Create one with: ugahost init'));
+    const projects = data.projects || [];
+
+    if (projects.length === 0) {
+      console.log(chalk.gray('\n  No projects yet. Run: ugahost init && ugahost deploy\n'));
+      return;
     }
+
+    console.log(chalk.bold.cyan(`\n📦 Your Projects (${projects.length}/${2} used)\n`));
+
+    projects.forEach((project: any, i: number) => {
+      const statusColor = project.status === 'running' ? chalk.green :
+                          project.status === 'stopped'  ? chalk.yellow :
+                          project.status === 'failed'   ? chalk.red : chalk.gray;
+
+      console.log(chalk.bold.white(`  ${i + 1}. ${project.name}`));
+      console.log(chalk.white('     URL:      ') + chalk.cyan(`https://${project.subdomain}.gss-tec.com`));
+      console.log(chalk.white('     Language: ') + chalk.white(project.language));
+      console.log(chalk.white('     Status:   ') + statusColor(project.status || 'unknown'));
+      console.log(chalk.white('     ID:       ') + chalk.gray(project.id));
+      console.log(chalk.white('     Created:  ') + chalk.gray(new Date(project.created_at).toLocaleDateString()));
+      console.log('');
+    });
   } catch (error: any) {
     console.log(chalk.red('❌ Failed to list projects:'), error.response?.data?.error || error.message);
   }

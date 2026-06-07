@@ -19,7 +19,7 @@ const program = new Command();
 program
   .name('ugahost')
   .description('UGA HOST CLI - Deploy backend applications to QSSN PaaS')
-  .version('1.0.5');
+  .version('1.0.9');
 
 // Login command
 program
@@ -59,8 +59,8 @@ envCmd
   .action(envCommand.list);
 
 envCmd
-  .command('set <key> <value>')
-  .description('Set an environment variable')
+  .command('set [key] [value]')
+  .description('Set an environment variable (prompts if not provided)')
   .option('-s, --secret', 'Mark as secret')
   .action(envCommand.set);
 

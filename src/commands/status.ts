@@ -16,45 +16,42 @@ export async function statusCommand(): Promise<void> {
 
   try {
     const api = createApiClient();
-    const { data } = await api.get(`/api/backend/projects/${projectConfig.projectId}/status`);
-    
-    console.log(chalk.cyan('\n📊 Project Status:\n'));
-    
-    // Project Info
-    console.log(chalk.white('Project:'), chalk.green(data.project.name));
-    console.log(chalk.white('URL:'), chalk.cyan(`https://${data.project.subdomain}.gss-tec.com`));
-    console.log(chalk.white('Language:'), data.project.language);
-    
-    // Status
-    const statusColor = data.project.status === 'running' ? chalk.green : 
-                       data.project.status === 'stopped' ? chalk.yellow : 
-                       chalk.red;
-    console.log(chalk.white('Status:'), statusColor(data.project.status.toUpperCase()));
-    
-    // Deployment Info
-    if (data.deployment) {
-      console.log(chalk.white('\nLast Deployment:'));
-      console.log(chalk.gray(`  Version: ${data.deployment.version}`));
-      console.log(chalk.gray(`  Deployed: ${new Date(data.deployment.deployed_at).toLocaleString()}`));
+    // GET /api/backend/projects/:id — returns project details
+    const { data } = await api.get(`/api/backend/projects/${projectConfig.projectId}`);
+    const project = data.project;
+
+    if (!project) {
+      console.log(chalk.red('❌ Project not found'));
+      return;
     }
-    
-    // Metrics
-    if (data.metrics) {
-      console.log(chalk.white('\nMetrics (Last 24h):'));
-      console.log(chalk.gray(`  Requests: ${data.metrics.requests || 0}`));
-      console.log(chalk.gray(`  Errors: ${data.metrics.errors || 0}`));
-      console.log(chalk.gray(`  Avg Response Time: ${data.metrics.avg_response_time || 0}ms`));
-      console.log(chalk.gray(`  CPU Usage: ${data.metrics.cpu_usage || 0}%`));
-      console.log(chalk.gray(`  Memory Usage: ${data.metrics.memory_usage || 0}MB`));
+
+    console.log(chalk.bold.cyan('\n📊 Project Status\n'));
+    console.log(chalk.white('  Name:      ') + chalk.green(project.name));
+    console.log(chalk.white('  URL:       ') + chalk.cyan(`https://${project.subdomain}.gss-tec.com`));
+    console.log(chalk.white('  Language:  ') + chalk.white(project.language));
+    console.log(chalk.white('  Worker:    ') + chalk.gray(project.worker_name || '—'));
+
+    const statusColor = project.status === 'running' ? chalk.green :
+                        project.status === 'stopped'  ? chalk.yellow :
+                        project.status === 'failed'   ? chalk.red : chalk.gray;
+    console.log(chalk.white('  Status:    ') + statusColor(project.status?.toUpperCase() || 'UNKNOWN'));
+    console.log(chalk.white('  Created:   ') + chalk.gray(new Date(project.created_at).toLocaleString()));
+
+    if (project.last_deployed_at) {
+      console.log(chalk.white('  Deployed:  ') + chalk.gray(new Date(project.last_deployed_at).toLocaleString()));
     }
-    
-    // Database
-    if (data.database) {
-      console.log(chalk.white('\nDatabase:'));
-      console.log(chalk.gray(`  Status: ${data.database.status === 'active' ? chalk.green('Active') : chalk.yellow(data.database.status)}`));
-      console.log(chalk.gray(`  Name: ${data.database.database_name}`));
-    }
-    
+
+    // Quota info
+    try {
+      const { data: quotaData } = await api.get('/api/backend/quota');
+      const q = quotaData.quota;
+      console.log(chalk.bold.cyan('\n📈 Quota\n'));
+      console.log(chalk.white('  Apps:      ') + chalk.yellow(`${q.apps.used}/${q.apps.max}`));
+      console.log(chalk.white('  Storage:   ') + chalk.yellow(`${q.storage.used_mb} MB / ${q.storage.max_mb} MB`));
+      console.log(chalk.white('  Requests:  ') + chalk.yellow(`${q.requests.today.toLocaleString()} / ${q.requests.max.toLocaleString()} today`));
+    } catch (_) {}
+
+    console.log('');
   } catch (error: any) {
     console.log(chalk.red('❌ Failed to get status:'), error.response?.data?.error || error.message);
   }
