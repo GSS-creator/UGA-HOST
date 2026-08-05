@@ -9,6 +9,7 @@ node_modules/
 
 # Documentation (keep README.md)
 QUICKSTART.md
+examples/
 
 # Git
 .git/
