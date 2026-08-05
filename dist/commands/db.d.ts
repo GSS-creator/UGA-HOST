@@ -1,24 +1,29 @@
 /**
  * UGA HOST Database CLI Commands
- * Like `wrangler d1` but for UGA HOST R2-backed JSON store
  *
- * Commands:
- *   ugahost db info                          - Show DB info & storage usage
- *   ugahost db collections                   - List all collections
- *   ugahost db find <collection> [query]     - Find documents
- *   ugahost db get <collection> <id>         - Get one document by _id
- *   ugahost db insert <collection> <json>    - Insert a document
- *   ugahost db update <collection> <query> <updates> - Update documents
- *   ugahost db delete <collection> <query>   - Delete documents
- *   ugahost db drop <collection>             - Drop a collection
- *   ugahost db count <collection> [query]    - Count documents
- *   ugahost db migrate <file>                - Run a migration JSON file
- *   ugahost db export <collection>           - Export collection to JSON
- *   ugahost db import <collection> <file>    - Import JSON file into collection
+ * Turso (SQLite) projects — commands talk to /database/query via raw SQL:
+ *   ugahost db tables                              List tables + row counts
+ *   ugahost db query "<SQL>"                       Run any SQL statement
+ *   ugahost db find   <table>  [where_clause]      SELECT * FROM <table> [WHERE ...]
+ *   ugahost db get    <table>  <id>                SELECT * … WHERE id=<id>
+ *   ugahost db insert <table>  <json>              INSERT INTO <table>
+ *   ugahost db update <table>  <where> <setjson>   UPDATE <table> SET … WHERE …
+ *   ugahost db delete <table>  <where>             DELETE FROM <table> WHERE …
+ *   ugahost db drop   <table>                      DROP TABLE <table>
+ *   ugahost db count  <table>  [where_clause]      SELECT COUNT(*) …
+ *   ugahost db migrate <file>                      Run .sql file or JSON migration
+ *   ugahost db export  <table> [-o file]           Export rows to JSON
+ *   ugahost db import  <table> <file>              Bulk-insert JSON array
+ *
+ * R2 (NoSQL) projects — original collection-based behaviour unchanged:
+ *   ugahost db info / collections / find / get / insert / update / delete /
+ *              drop / count / migrate / export / import
  */
 export declare const dbCommand: {
     info(): Promise<void>;
+    tables(): Promise<void>;
     collections(): Promise<void>;
+    query(sqlStr: string): Promise<void>;
     find(collection: string, queryStr?: string, options?: any): Promise<void>;
     get(collection: string, id: string): Promise<void>;
     insert(collection: string, jsonStr: string): Promise<void>;

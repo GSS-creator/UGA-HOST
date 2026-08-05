@@ -1,6 +1,6 @@
-﻿# UGA HOST CLI  Complete Command Reference
+# UGA HOST CLI — Complete Command Reference
 
-> **Version 1.0.5**  Deploy backend apps to the edge  Like `wrangler` but for UGA HOST
+> **Version 1.1.0**  Deploy backend apps to the edge — Like `wrangler` but for UGA HOST
 
 ---
 
@@ -31,22 +31,24 @@ ugahost env list                           List environment variables
 ugahost env set KEY value                  Set environment variable
 ugahost env set KEY value --secret         Set secret environment variable
 ugahost env unset KEY                      Remove environment variable
-ugahost db info                            DB info + storage usage
-ugahost db collections                     List all collections
-ugahost db find <col>                      Find all documents
-ugahost db find <col> '{"key":"val"}'      Find with filter
-ugahost db find <col> --json               Find (raw JSON output)
-ugahost db get <col> <id>                  Get one document by _id
-ugahost db insert <col> '<json>'           Insert a document
-ugahost db update <col> '<query>' '<upd>'  Update matching documents
-ugahost db delete <col> '<query>'          Delete matching documents
-ugahost db count <col>                     Count all documents
-ugahost db count <col> '<query>'           Count with filter
-ugahost db drop <col>                      Drop entire collection
-ugahost db migrate <file.json>             Run migration file
-ugahost db export <col>                    Export collection to JSON file
-ugahost db export <col> -o <file>          Export to specific file
-ugahost db import <col> <file.json>        Import JSON file into collection
+ugahost db info                            DB info — Turso tables or R2 storage
+ugahost db tables                          List tables + row counts (Turso projects)
+ugahost db collections                     List collections (R2/NoSQL projects)
+ugahost db query "<SQL>"                   Run raw SQL (Turso projects)
+ugahost db find <table>                    SELECT * (Turso) or find all docs (R2)
+ugahost db find <table> '{"key":"val"}'    Find with filter / WHERE clause
+ugahost db find <table> --json             Raw JSON output
+ugahost db get <table> <id>               Get row/doc by id
+ugahost db insert <table> '<json>'         INSERT row / insert document
+ugahost db update <table> '<where>' '<set>' UPDATE rows / update documents
+ugahost db delete <table> '<where>'        DELETE rows / delete documents
+ugahost db count <table>                   COUNT rows / documents
+ugahost db count <table> '<where>'         COUNT with filter
+ugahost db drop <table>                    DROP TABLE / drop collection
+ugahost db migrate <file.sql|file.json>    Run SQL file or JSON migration
+ugahost db export <table>                  Export to JSON file
+ugahost db export <table> -o <file>        Export to specific file
+ugahost db import <table> <file.json>      Bulk-insert JSON array
 ```
 
 ---
@@ -201,197 +203,295 @@ ugahost env unset API_SECRET
 
 ## 7. Database
 
-Your project's R2-backed JSON document store.
-Each project gets up to **200 MB** of storage.
-Think of it like MongoDB  collections of JSON documents.
+UGA HOST auto-detects your project's database type:
+
+| Project type | DB engine | Commands use |
+|---|---|---|
+| Python / Node.js with Turso | **Turso (libSQL / SQLite)** | SQL-based: `tables`, `query`, `find`, `insert` … |
+| Node.js (legacy R2) | **R2 JSON Store** | NoSQL-based: `collections`, `find`, `insert` … |
+
+---
 
 ### `ugahost db info`
-Show database info, storage usage, and collections.
+Show database type, tables/collections, and storage.
 
 ```bash
 ugahost db info
 ```
 
-**Output:**
+**Turso output:**
 ```
-  Database Info
+🗄️  Database Info
+
+  Type:    Turso (libSQL / SQLite)
+  URL:     libsql://myapp-org.turso.io
+  Tables:  3
+
+    • users                    6 rows
+    • audit                    2 rows
+    • example                  0 rows
+```
+
+**R2 output:**
+```
+🗄️  Database Info
 
   Type:        R2 JSON Store
   Collections: 3
   Storage:     0.12 MB / 200 MB
-  Usage:       [] 0%
-
-  Collections:
-     users
-     sessions
-     settings
+  Usage:       [█░░░░░░░░░░░░░░░░░░░] 0%
 ```
 
-### `ugahost db collections`
-List all collections.
+---
+
+### `ugahost db tables` *(Turso projects)*
+List all SQLite tables with row counts.
+
+```bash
+ugahost db tables
+```
+
+```
+📋 Tables (3)
+
+  • users                        6 rows
+  • audit                        2 rows
+  • example                      0 rows
+```
+
+---
+
+### `ugahost db collections` *(R2 projects)*
+List all NoSQL collections.
 
 ```bash
 ugahost db collections
 ```
 
-### `ugahost db find`
-Find documents in a collection.
+---
+
+### `ugahost db query "<SQL>"` *(Turso projects)*
+Run any raw SQL statement — SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, etc.
 
 ```bash
+ugahost db query "SELECT * FROM users"
+ugahost db query "SELECT id, username, is_admin FROM users WHERE is_admin = 1"
+ugahost db query "CREATE TABLE logs (id INTEGER PRIMARY KEY, msg TEXT, ts INTEGER)"
+ugahost db query "DROP TABLE example"
+```
+
+```
+  2 row(s)
+
+  id  username  is_admin
+  ──────────────────────
+  1   admin     1
+```
+
+---
+
+### `ugahost db find <table> [filter]`
+SELECT all rows (Turso) or find documents (R2).
+
+```bash
+# Turso — filter is a JSON object that becomes WHERE col = ?
 ugahost db find users
-ugahost db find users '{"role":"admin"}'
-ugahost db find users '{"active":true}'
+ugahost db find users '{"is_admin":1}'
 ugahost db find users --json
+
+# R2
+ugahost db find users '{"role":"admin"}'
 ```
 
 | Option | Description |
 |--------|-------------|
 | `--json` | Output raw JSON instead of table |
 
-### `ugahost db get`
-Get one document by `_id`.
+---
+
+### `ugahost db get <table> <id>`
+Get one row/document by `id` (Turso) or `_id` (R2).
 
 ```bash
+ugahost db get users 1
 ugahost db get users usr_abc123def456
-```
-
-### `ugahost db insert`
-Insert a new document.
-
-```bash
-ugahost db insert users '{"name":"John Doe","email":"john@example.com","role":"user"}'
-ugahost db insert settings '{"key":"theme","value":"dark"}'
-```
-
-**Output:**
-```
- Document inserted
-  _id:       users_m4x2_a1b3
-  createdAt: 2026-04-30T05:00:00.000Z
-```
-
-### `ugahost db update`
-Update documents matching a query.
-
-```bash
-ugahost db update users '{"email":"john@example.com"}' '{"name":"Jane Doe"}'
-ugahost db update users '{"_id":"usr_abc123"}' '{"role":"admin"}'
-ugahost db update settings '{"key":"theme"}' '{"value":"light"}'
-```
-
-**Output:**
-```
- 1 document(s) updated
-```
-
-### `ugahost db delete`
-Delete documents matching a query.
-
-```bash
-ugahost db delete users '{"email":"john@example.com"}'
-ugahost db delete users '{"_id":"usr_abc123"}'
-ugahost db delete sessions '{"expired":true}'
-```
-
-**Output:**
-```
- 1 document(s) deleted
-```
-
-### `ugahost db count`
-Count documents in a collection.
-
-```bash
-ugahost db count users
-ugahost db count users '{"role":"admin"}'
-```
-
-**Output:**
-```
-  users: 42 document(s)
-```
-
-### `ugahost db drop`
-Drop an entire collection. Asks for confirmation.
-
-```bash
-ugahost db drop sessions
-```
-
-```
-  This will permanently delete ALL documents in "sessions".
-  Type "sessions" to confirm: sessions
- Collection "sessions" dropped
-```
-
-### `ugahost db migrate`
-Run a migration JSON file. Like `wrangler d1 execute`.
-
-```bash
-ugahost db migrate migrations/001_seed.json
-ugahost db migrate migrations/002_add_roles.json
-```
-
-**Output:**
-```
- Running migration: Seed initial data
-   Version: 001  3 operation(s)
-
-   [1/3] insert  users
-   [2/3] insert  settings
-   [3/3] insert  roles
-
- Migration complete: 3/3 operations succeeded
-```
-
-### `ugahost db export`
-Export a collection to a JSON file.
-
-```bash
-ugahost db export users
-ugahost db export users -o backup/users-2026-04-30.json
-```
-
-| Option | Description |
-|--------|-------------|
-| `-o, --output <file>` | Output file path |
-
-**Output:**
-```
- Exported 42 document(s) to: users-export-1746000000000.json
-```
-
-### `ugahost db import`
-Import a JSON file into a collection.
-
-```bash
-ugahost db import users backup/users-2026-04-30.json
-ugahost db import products products.json
-```
-
-**Output:**
-```
- Importing 42 document(s) into "users"...
-
-   [1/42] Inserted
-   [2/42] Inserted
-
- Import complete: 42 document(s) inserted
 ```
 
 ---
 
-## 8. Migration File Format
+### `ugahost db insert <table> '<json>'`
+Insert a row (Turso) or document (R2).
 
-**File: `migrations/001_seed.json`**
+```bash
+# Turso — JSON keys map directly to column names
+ugahost db insert users '{"username":"alice","email":"alice@x.com","is_admin":0,"is_active":1,"created_at":1700000000,"password_hash":"pbkdf2:x:y"}'
 
+# R2
+ugahost db insert users '{"name":"John","email":"john@x.com","role":"user"}'
+```
+
+**Turso output:**
+```
+✅ Row inserted
+   1 row(s) affected
+```
+
+> **Windows tip:** Use `cmd /c` to avoid PowerShell stripping braces:
+> ```
+> cmd /c "ugahost db insert users `"{`"username`":`"alice`",`"is_admin`":0}`""
+> ```
+
+---
+
+### `ugahost db update <table> '<where>' '<set>'`
+UPDATE rows / update documents.
+
+```bash
+# Turso — first JSON = WHERE clause, second JSON = SET clause
+ugahost db update users '{"id":3}' '{"is_active":0}'
+
+# R2
+ugahost db update users '{"email":"j@x.com"}' '{"name":"Jane"}'
+```
+
+---
+
+### `ugahost db delete <table> '<where>'`
+DELETE rows / delete documents.
+
+```bash
+ugahost db delete users '{"id":3}'
+ugahost db delete sessions '{"expired":true}'
+```
+
+---
+
+### `ugahost db count <table> [filter]`
+Count rows/documents, optionally filtered.
+
+```bash
+ugahost db count users
+ugahost db count users '{"is_admin":1}'
+```
+
+```
+  users: 6 row(s)
+```
+
+---
+
+### `ugahost db drop <table>`
+DROP TABLE (Turso) or drop collection (R2). Asks for confirmation.
+
+```bash
+ugahost db drop example
+```
+
+```
+⚠️  This will permanently delete "example" and ALL its data.
+  Type "example" to confirm: example
+✅ Table "example" dropped
+```
+
+---
+
+### `ugahost db migrate <file>`
+Run a migration. Two formats supported:
+
+**SQL file (Turso):**
+```bash
+ugahost db migrate schema.sql
+ugahost db migrate migrations/001_init.sql
+```
+Each `;`-separated statement runs in order.
+
+**JSON file (both):**
+```bash
+ugahost db migrate migrations/001_seed.json
+```
+
+```
+🔄 Running migration: schema.sql
+   3 statement(s)
+
+  ✅ [1/3] CREATE TABLE users (…
+  ✅ [2/3] CREATE TABLE audit (…
+  ✅ [3/3] INSERT INTO users (…
+
+✅ Migration complete: 3/3 succeeded
+```
+
+---
+
+### `ugahost db export <table>`
+Export all rows to a JSON file.
+
+```bash
+ugahost db export users
+ugahost db export users -o backup/users-2026-08-05.json
+```
+
+| Option | Description |
+|--------|-------------|
+| `-o, --output <file>` | Output file path (default: `<table>-export-<ts>.json`) |
+
+```
+✅ Exported 6 row(s) → users-export-1785888970830.json
+```
+
+---
+
+### `ugahost db import <table> <file.json>`
+Bulk-insert a JSON array into a table/collection.
+
+```bash
+ugahost db import users seed.json
+ugahost db import products products.json
+```
+
+```
+📥 Importing 2 row(s) into "users"...
+
+  ✅ [1/2] Inserted
+  ✅ [2/2] Inserted
+
+✅ Import complete: 2 row(s) inserted
+```
+
+> The auto-increment `id` field is stripped automatically; all other fields are preserved.
+
+---
+
+## 8. Migration File Formats
+
+### SQL file (`schema.sql`) — Turso projects
+```sql
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_admin INTEGER NOT NULL DEFAULT 0,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS audit (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  action TEXT NOT NULL,
+  ip TEXT,
+  ts INTEGER NOT NULL
+);
+```
+
+### JSON file (`migrations/001_seed.json`) — R2 projects
 ```json
 {
   "version": "001",
   "description": "Seed initial data",
   "operations": [
     { "op": "insert", "collection": "settings", "doc": { "key": "theme", "value": "dark" } },
-    { "op": "insert", "collection": "roles", "doc": { "name": "admin", "level": 10 } },
     { "op": "update", "collection": "users", "query": { "role": "superadmin" }, "updates": { "role": "admin" } },
     { "op": "delete", "collection": "sessions", "query": { "expired": true } },
     { "op": "drop",   "collection": "old_logs" }
@@ -399,12 +499,25 @@ ugahost db import products products.json
 }
 ```
 
+### JSON file with SQL (`migrations/001_turso.json`) — Turso projects
+```json
+{
+  "version": "001",
+  "description": "Create tables",
+  "operations": [
+    { "sql": "CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL)" },
+    { "sql": "INSERT INTO users (username) VALUES ('admin')" }
+  ]
+}
+```
+
 | `op` | Required fields | Description |
 |------|----------------|-------------|
-| `insert` | `collection`, `doc` | Insert a document |
-| `update` | `collection`, `query`, `updates` | Update matching documents |
-| `delete` | `collection`, `query` | Delete matching documents |
-| `drop` | `collection` | Drop entire collection |
+| `insert` | `collection`, `doc` | Insert a document (R2) |
+| `update` | `collection`, `query`, `updates` | Update matching documents (R2) |
+| `delete` | `collection`, `query` | Delete matching documents (R2) |
+| `drop` | `collection` | Drop entire collection (R2) |
+| `sql` | `sql` | Run a SQL statement (Turso) |
 
 ---
 

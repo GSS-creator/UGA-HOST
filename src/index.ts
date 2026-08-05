@@ -72,21 +72,31 @@ envCmd
 // Database commands
 const dbCmd = program
   .command('db')
-  .description('Manage your R2 database (like wrangler d1)');
+  .description('Manage your project database (Turso/SQLite or R2/NoSQL)');
 
 dbCmd
   .command('info')
-  .description('Show database info and storage usage')
+  .description('Show database info, tables/collections and storage usage')
   .action(dbCommand.info);
 
 dbCmd
+  .command('tables')
+  .description('List all tables with row counts (Turso projects)')
+  .action(dbCommand.tables);
+
+dbCmd
   .command('collections')
-  .description('List all collections')
+  .description('List all collections (R2/NoSQL projects)')
   .action(dbCommand.collections);
 
 dbCmd
+  .command('query <sql>')
+  .description('Run a raw SQL statement  e.g. ugahost db query "SELECT * FROM users"')
+  .action(dbCommand.query);
+
+dbCmd
   .command('find <collection> [query]')
-  .description('Find documents  e.g. ugahost db find users \'{"role":"admin"}\'')
+  .description('Find rows/documents  e.g. ugahost db find users \'{"role":"admin"}\'')
   .option('--json', 'Output raw JSON')
   .action(dbCommand.find);
 
