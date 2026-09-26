@@ -14,6 +14,7 @@ export interface ProjectConfig {
     buildCommand?: string;
     startCommand?: string;
     installCommand?: string;
+    pythonMode?: 'standard' | 'pyodide-worker';
 }
 export declare function ensureConfigDir(): void;
 export declare function getConfig(): Config;

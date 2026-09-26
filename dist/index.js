@@ -21,7 +21,7 @@ const program = new commander_1.Command();
 program
     .name('ugahost')
     .description('UGA HOST CLI - Deploy backend applications to QSSN PaaS')
-    .version('1.0.9');
+    .version('2.2.3');
 // Login command
 program
     .command('login')

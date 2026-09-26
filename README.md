@@ -52,7 +52,7 @@ npm install -g ugahost@latest
 Or install a specific version:
 
 ```bash
-npm install -g ugahost@2.1.0
+npm install -g ugahost@2.2.3
 ```
 
 Verify installation:
@@ -363,27 +363,153 @@ UGA HOST currently supports:
 
 **Note**: Only Node.js and Python are supported. Other languages require external infrastructure and are not currently available.
 
-## Python Worker Rules
+## Python Deployment Modes
 
-> Read this section before writing a single line of Python for UGA HOST. Every point below comes from real deployment experience.
+UGA HOST supports **TWO** Python deployment modes with different requirements and use cases:
 
-### Entrypoint — the only valid structure
+### Mode A: Standard HTTP Server (DEFAULT - Recommended)
+**Use when:** You want traditional Python web frameworks like Flask, FastAPI, or standard HTTP servers.
 
-Your file **must** be named `app.py` and **must** contain exactly this pattern:
+**Entrypoint requirements:**
+- Your file **must** be named `app.py`
+- Must use a standard Python web framework or HTTP server
+- Must reference the `PORT` environment variable
+- Must call a `.run()` method to start the server
 
+**Valid examples:**
+```python
+# Flask example
+from flask import Flask
+import os
+
+app = Flask(__name__)
+
+@app.route('/')
+def hello():
+    return {"message": "Hello"}
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 3000)))
+```
+
+```python
+# FastAPI example
+from fastapi import FastAPI
+import uvicorn
+import os
+
+app = FastAPI()
+
+@app.get('/')
+async def root():
+    return {"message": "Hello"}
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get('PORT', 3000)))
+```
+
+```python
+# Standard HTTPServer example
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+import os
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/api/health':
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"status": "healthy"}).encode())
+
+if __name__ == '__main__':
+    server = HTTPServer(('0.0.0.0', int(os.environ.get('PORT', 3000))), Handler)
+    server.serve_forever()
+```
+
+**Key requirements:**
+- ✅ Use Flask, FastAPI, Uvicorn, or standard HTTP servers
+- ✅ Reference `PORT` environment variable
+- ✅ Have a `.run()` method or equivalent server startup
+- ✅ Do **NOT** use Cloudflare Worker/Pyodide APIs
+
+### Mode B: Cloudflare Pyodide Worker (ADVANCED)
+**Use when:** You need Cloudflare Workers edge deployment with the Pyodide runtime.
+
+**Entrypoint requirements:**
+- Your file **must** be named `app.py`
+- Must use Cloudflare Workers API with Pyodide runtime
+- Must define `class Default(WorkerEntrypoint)` with `async def on_fetch()`
+- Must use `pyodide.http.pyfetch()` for HTTP calls
+
+**Valid example:**
 ```python
 from workers import WorkerEntrypoint, Response
 
 class Default(WorkerEntrypoint):
     async def on_fetch(self, request, env, ctx=None):
-        # your logic here
         return Response("hello", status=200,
                         headers={"Content-Type": "text/plain"})
 ```
 
-- The class **must** be named `Default` and inherit `WorkerEntrypoint`.
-- The method **must** be `async def on_fetch(self, request, env, ctx=None)`.
-- Do **not** use a top-level `fetch()` function — that is the JavaScript pattern and will silently fail.
+**Key requirements:**
+- ✅ Use `from workers import WorkerEntrypoint, Response`
+- ✅ Define `class Default(WorkerEntrypoint):`
+- ✅ Implement `async def on_fetch(self, request, env, ctx=None)`
+- ✅ Use `import pyodide.http` for HTTP calls
+- ✅ Do **NOT** use traditional HTTP servers (no `app.run()`, Flask, etc.)
+- ✅ Do **NOT** use pip packages (Python stdlib only)
+
+## 🚀 How to Choose Your Mode
+
+### Choose Standard Mode when:
+- ✅ You need traditional Python web frameworks
+- ✅ You want Flask, FastAPI, or similar
+- ✅ You need pip packages
+- ✅ You're familiar with blocking server patterns
+- ✅ You're building traditional web applications
+
+### Choose Pyodide Worker Mode when:
+- ✅ You need Cloudflare Workers edge deployment
+- ✅ You want global CDN distribution
+- ✅ You need serverless, stateless functions
+- ✅ You want zero cold starts
+- ✅ You're building API endpoints for global access
+
+## 📋 Mode Selection During Project Init
+
+When you run `ugahost init` for a Python project, you'll be asked:
+
+```
+Python deployment mode:
+  1. Standard HTTP Server (Flask, FastAPI, Uvicorn) ← RECOMMENDED
+  2. Cloudflare Pyodide Worker (workers API)
+```
+
+**Default (most common):** Choose option 1 (Standard HTTP Server)
+
+**Special case:** Choose option 2 only if you need Cloudflare Workers
+
+## ⚠️ Important Notes
+
+### Standard Mode (Flask/FastAPI/Uvicorn)
+- **Pip packages allowed** - you can use Flask, fastapi, etc.
+- **Traditional HTTP servers** - `app.run()`, `uvicorn.run()`, `HTTPServer`
+- **Environment variables** - `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` auto-injected
+- **Framework choice** - pick what you know and like
+
+### Pyodide Worker Mode (Cloudflare Workers)
+- **No pip packages** - only Python stdlib
+- **Cloudflare Workers only** - no traditional servers
+- **Workers API required** - `from workers import WorkerEntrypoint, Response`
+- **Edge deployment** - runs on Cloudflare's global CDN
+- **Use `pyodide.http.pyfetch()`** - for external HTTP calls
+
+> **💡 Pro Tip:** Start with Standard mode (Flask/FastAPI). Use Pyodide Worker mode only when you need Cloudflare Workers edge deployment.
+
+> **📚 Documentation:** See the examples directory for both modes:
+> - `examples/standard-flask/` - Standard HTTP Server examples
+> - `examples/pyodide-worker/` - Cloudflare Pyodide Worker examples
 
 ### No pip — stdlib only (plus `workers` + `pyodide.http`)
 

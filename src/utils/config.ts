@@ -23,6 +23,7 @@ export interface ProjectConfig {
   buildCommand?: string;
   startCommand?: string;
   installCommand?: string;
+  pythonMode?: 'standard' | 'pyodide-worker';  // Python deployment mode
 }
 
 export function ensureConfigDir(): void {

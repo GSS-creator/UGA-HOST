@@ -1,10 +1,10 @@
 {
   "name": "ugahost",
-  "version": "2.1.0",
+  "version": "2.2.3",
   "description": "UGA HOST CLI - Deploy backend applications (Node.js, Python) to QSSN PaaS with automatic database provisioning",
   "main": "dist/index.js",
   "bin": {
-    "ugahost": "./dist/index.js"
+    "ugahost": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -27,7 +27,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/GSS-creator/UGA-HOST.git"
+    "url": "git+https://github.com/GSS-creator/UGA-HOST.git"
   },
   "homepage": "https://github.com/GSS-creator/UGA-HOST",
   "bugs": {

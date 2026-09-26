@@ -136,7 +136,7 @@ npm publish
 
 1. **Test Installation:**
    ```bash
-   npm install -g ugahost@1.0.9
+   npm install -g ugahost@2.2.2
    ugahost --version
    ```
 

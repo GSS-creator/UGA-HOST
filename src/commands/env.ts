@@ -51,12 +51,12 @@ export const envCommand = {
     let isSecret = options?.secret || false;
 
     if (!envKey || !envValue) {
-      const answers = await inquirer.prompt([
-        {
+      const prompts: any[] = [];
+      if (!envKey) {
+        prompts.push({
           type: 'input',
           name: 'key',
           message: 'Variable name:',
-          when: !envKey,
           validate: (input: string) => {
             if (!input.trim()) return 'Variable name is required';
             if (!/^[A-Z_][A-Z0-9_]*$/i.test(input)) {
@@ -64,26 +64,29 @@ export const envCommand = {
             }
             return true;
           }
-        },
-        {
+        });
+      }
+      if (!envValue) {
+        prompts.push({
           type: 'input',
           name: 'value',
           message: 'Value:',
-          when: !envValue,
           validate: (input: string) => {
             if (!input) return 'Value is required';
             return true;
           }
-        },
-        {
+        });
+      }
+      if (!options?.secret) {
+        prompts.push({
           type: 'confirm',
           name: 'secret',
           message: 'Mark as secret? (will be hidden in logs)',
           default: false,
-          when: !options?.secret
-        }
-      ]);
+        });
+      }
 
+      const answers = await inquirer.prompt(prompts);
       envKey = envKey || answers.key;
       envValue = envValue || answers.value;
       isSecret = options?.secret || answers.secret || false;

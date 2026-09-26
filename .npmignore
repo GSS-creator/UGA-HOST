@@ -14,3 +14,6 @@ examples/
 # Git
 .git/
 .gitignore
+
+# Test directory
+test/
