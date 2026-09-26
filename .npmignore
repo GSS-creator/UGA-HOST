@@ -17,3 +17,7 @@ examples/
 
 # Test directory
 test/
+
+# Local test artifacts
+test/data.db
+test/ugahost.json
