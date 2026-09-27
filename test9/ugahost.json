@@ -1,0 +1,8 @@
+{
+  "name": "kk",
+  "subdomain": "kk",
+  "language": "nodejs",
+  "port": 3000,
+  "pythonMode": "standard",
+  "projectId": "backend_1ca3057a-a996-4766-82fa-05168466619b"
+}

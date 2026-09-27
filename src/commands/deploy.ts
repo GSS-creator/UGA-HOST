@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 import { getProjectConfig, isLoggedIn, saveProjectConfig } from '../utils/config';
 import { createApiClient } from '../utils/api';
 
@@ -32,7 +33,7 @@ function validatePythonContainerSource(code: string, pythonMode?: string): void 
     if (!/\bclass\s+Default\s*\(\s*WorkerEntrypoint\s*\)/.test(code)) {
       failures.push('Pyodide Worker mode requires: "class Default(WorkerEntrypoint):"');
     }
-    if (!/\basync\s+on_fetch\s*\(/.test(code)) {
+    if (!/\basync\s+def\s+on_fetch\s*\(/.test(code)) {
       failures.push('Pyodide Worker mode requires: "async def on_fetch(self, request, env, ctx=None):" method');
     }
     // Block traditional HTTP servers in Pyodide Worker mode
@@ -70,11 +71,57 @@ function validatePythonContainerSource(code: string, pythonMode?: string): void 
     failures.push('Must reference PORT environment variable');
   }
 
+  // ── Syntax check via local Python interpreter ────────────────────────────
+  const syntaxError = checkPythonSyntax(code);
+  if (syntaxError) {
+    failures.push(`Syntax error: ${syntaxError}`);
+  }
+
+  // ── Dangerous patterns ───────────────────────────────────────────────────
+  if (/^sys\.exit\s*\(/m.test(code)) {
+    failures.push('Top-level sys.exit() will kill the server immediately — remove it or guard it inside a block');
+  }
+  if (/^\s*import\s+__main__/m.test(code)) {
+    failures.push('Importing __main__ at top level can cause infinite loops');
+  }
+
   if (failures.length > 0) {
     throw new Error(
       `Python ${isPyodideWorkerMode ? 'Pyodide Worker' : 'Standard'} compatibility check failed:\n\n${failures.map((item) => `  • ${item}`).join('\n')}\n\n` +
       `For ${isPyodideWorkerMode ? 'Pyodide Worker mode: Use Cloudflare Worker APIs' : 'Standard mode: Use Flask, FastAPI, Uvicorn, or HTTPServer'}.\n`
     );
+  }
+}
+
+/**
+ * Check Python syntax by compiling with the local interpreter.
+ * Returns an error string on failure, null on success.
+ */
+function checkPythonSyntax(code: string): string | null {
+  // Write to a temp file so we get accurate line numbers
+  const tmpFile = path.join(require('os').tmpdir(), `uga_syntax_check_${Date.now()}.py`);
+  try {
+    fs.writeFileSync(tmpFile, code, 'utf-8');
+    // Try python3 first, fall back to python
+    const pythonCmd = (() => {
+      for (const cmd of ['python3', 'python']) {
+        try { execSync(`${cmd} --version`, { stdio: 'ignore' }); return cmd; } catch { /* try next */ }
+      }
+      return null;
+    })();
+    if (!pythonCmd) return null; // No local Python — skip syntax check
+    execSync(`${pythonCmd} -c "import ast, sys; ast.parse(open(sys.argv[1]).read())" ${tmpFile}`, {
+      stdio: 'pipe',
+      timeout: 8000,
+    });
+    return null;
+  } catch (e: any) {
+    const msg = (e.stderr?.toString() || e.message || '').trim();
+    // Extract just the relevant line from the error
+    const match = msg.match(/(?:SyntaxError|IndentationError|TabError)[^\n]*/);
+    return match ? match[0] : msg.split('\n').filter(Boolean).pop() || 'unknown syntax error';
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
   }
 }
 
@@ -290,21 +337,30 @@ export async function deployCommand(options: any): Promise<void> {
     
     if (error.response) {
       const errData = error.response.data;
+      const rawMsg: string = errData?.message || errData?.error || error.message || '';
       console.log(chalk.red('\n  Error details:'));
       console.log(chalk.yellow('  Status:  '), error.response.status);
-      console.log(chalk.yellow('  Message: '), errData?.message || errData?.error || error.message);
+      // Print each line of the message indented so multi-line messages render cleanly
+      rawMsg.split('\n').forEach((line: string, i: number) => {
+        if (i === 0) console.log(chalk.yellow('  Message: ') + chalk.white(line));
+        else if (line.trim()) console.log(chalk.white('           ' + line));
+      });
       if (errData && typeof errData === 'object' && Object.keys(errData).length > 2) {
         console.log(chalk.gray('  Details: '), JSON.stringify(errData, null, 2));
       }
     } else {
       console.log(chalk.red('\n  ' + error.message));
     }
-    
-    console.log('');
-    console.log(chalk.gray('  Troubleshooting:'));
-    console.log(chalk.white('  1.') + chalk.gray(' Check your internet connection'));
-    console.log(chalk.white('  2.') + chalk.gray(' Verify your API key: ') + chalk.white('ugahost login'));
-    console.log(chalk.white('  3.') + chalk.gray(' Check status: ') + chalk.cyan('https://qssnpaas.gss-tec.com'));
+
+    // Only show generic troubleshooting for non-quota/non-validation errors
+    const isQuotaOrValidation = (error.response?.status === 400 || error.response?.status === 402 || error.response?.status === 403);
+    if (!isQuotaOrValidation) {
+      console.log('');
+      console.log(chalk.gray('  Troubleshooting:'));
+      console.log(chalk.white('  1.') + chalk.gray(' Check your internet connection'));
+      console.log(chalk.white('  2.') + chalk.gray(' Verify your API key: ') + chalk.white('ugahost login'));
+      console.log(chalk.white('  3.') + chalk.gray(' Check status: ') + chalk.cyan('https://qssnpaas.gss-tec.com'));
+    }
   }
 }
 

@@ -52,15 +52,20 @@ npm install -g ugahost@latest
 Or install a specific version:
 
 ```bash
-npm install -g ugahost@2.2.4
+npm install -g ugahost@2.2.5
 ```
 
 Verify installation:
 
 ```bash
 ugahost --version
-# Output: 2.2.4
+# Output: 2.2.5
 ```
+
+### What's New in v2.2.5
+
+- ✅ **Developer docs** — All "Developer Guide" links across the dashboard now point to `https://docs.ugahost.gssllp.gss-tec.com/`
+- ✅ **Install command** — CLI update banner now uses `npm install -g ugahost@latest` instead of a pinned version
 
 ### What's New in v2.2.4
 
