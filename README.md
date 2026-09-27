@@ -52,17 +52,26 @@ npm install -g ugahost@latest
 Or install a specific version:
 
 ```bash
-npm install -g ugahost@2.2.3
+npm install -g ugahost@2.2.4
 ```
 
 Verify installation:
 
 ```bash
 ugahost --version
-# Output: 2.1.0
+# Output: 2.2.4
 ```
 
-### What's New in v2.1.0
+### What's New in v2.2.4
+
+- ✅ **Branding update** — All emails now show **Gaston Software Solutions LLP** and link to the official LinkedIn page
+- ✅ **Email header** — Subtitle updated from `by GSS-TEC · Uganda` to `by GSS-LLP` across all transactional emails
+- ✅ **LinkedIn footer link** — Every platform email now includes a LinkedIn button pointing to `https://ug.linkedin.com/company/gaston-software-solutions-llp`
+- ✅ **Python dual-mode deployment** — `ugahost deploy` fully supports both **Standard HTTP Server** (Flask, FastAPI) and **Cloudflare Pyodide Worker** modes with strict pre-deploy validation
+- ✅ **Python health check** — After a Python deploy, the CLI verifies the runtime is reachable before reporting success
+- ✅ **Smarter cold-start handling** — 503/404 container-not-ready responses are treated as non-fatal; deploy still succeeds
+
+### What's New in v2.2.3
 
 - ✅ **Turso (SQLite) Database CLI** — `ugahost db` commands auto-detect Turso vs R2 and route correctly
 - ✅ **`ugahost db tables`** — List SQLite tables with row counts (Turso projects)
@@ -1318,8 +1327,8 @@ Built with:
 
 ---
 
-**Made with ❤️ by Gaston Software Solutions Tec**
+**Made with ❤️ by Gaston Software Solutions LLP**
 
 📧 [info@gss-tec.com](mailto:info@gss-tec.com) • 💼 [partnership@gss-tec.com](mailto:partnership@gss-tec.com) • 💬 [WhatsApp: +256755274944](https://wa.me/256755274944)
 
-🌐 [Website](https://www.gss-tec.com) • 💻 [GitHub](https://github.com/GSS-creator) • 🚀 [Dashboard](https://3ce7ca25.qssn-cloud-manager.pages.dev)
+🌐 [Website](https://www.gss-tec.com) • 💻 [GitHub](https://github.com/GSS-creator) • 🚀 [Dashboard](https://qssn-cloud-manager.pages.dev) • 💼 [LinkedIn](https://ug.linkedin.com/company/gaston-software-solutions-llp)

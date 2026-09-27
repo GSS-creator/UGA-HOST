@@ -14,8 +14,8 @@ app = Flask(__name__)
 # Turso exposes a standard HTTP API at the same host:
 #   POST https://<db-host>/v2/pipeline
 #
-DATABASE_URL   = os.environ.get('TURSO_DATABASE_URL', '')
-DATABASE_TOKEN = os.environ.get('TURSO_AUTH_TOKEN', '')
+DATABASE_URL   = os.environ.get('DATABASE_URL', '')
+DATABASE_TOKEN = os.environ.get('DATABASE_AUTH_TOKEN', '')
 
 
 def turso_host() -> str:
@@ -113,7 +113,7 @@ def index():
 @app.route('/api/status', methods=['GET'])
 def status():
     db_ok  = bool(DATABASE_URL and DATABASE_TOKEN)
-    detail = "connected" if db_ok else "missing TURSO_DATABASE_URL or TURSO_AUTH_TOKEN"
+    detail = "connected" if db_ok else "missing DATABASE_URL or DATABASE_AUTH_TOKEN"
     try:
         if db_ok:
             turso_query("SELECT 1")
@@ -186,7 +186,7 @@ def delete_item(item_id):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3000))
     if not DATABASE_URL or not DATABASE_TOKEN:
-        print("⚠️  TURSO_DATABASE_URL or TURSO_AUTH_TOKEN not set")
+        print("⚠️  DATABASE_URL or DATABASE_AUTH_TOKEN not set")
         print("   The platform injects these automatically at runtime")
     else:
         init_db()

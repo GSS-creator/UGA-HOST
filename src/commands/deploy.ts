@@ -181,6 +181,15 @@ export async function deployCommand(options: any): Promise<void> {
     const code = readProjectFiles(process.cwd(), projectConfig.language, pythonMode);
     const version = generateVersion(code);
 
+    // Read requirements.txt for Python projects
+    let requirements: string | undefined;
+    if (projectConfig.language === 'python') {
+      const reqPath = path.join(process.cwd(), 'requirements.txt');
+      if (fs.existsSync(reqPath)) {
+        requirements = fs.readFileSync(reqPath, 'utf-8');
+      }
+    }
+
     let projectId: string;
     let workerVersion: string | undefined;
 
@@ -191,6 +200,7 @@ export async function deployCommand(options: any): Promise<void> {
       const { data } = await api.post(`/api/backend/projects/${projectConfig.projectId}/redeploy`, {
         code,
         version,
+        ...(requirements !== undefined && { requirements }),
       });
 
       if (!data.success) {
@@ -208,6 +218,7 @@ export async function deployCommand(options: any): Promise<void> {
         ...projectConfig,
         code,
         version,
+        ...(requirements !== undefined && { requirements }),
       });
 
       if (!data.success) {
@@ -246,7 +257,8 @@ export async function deployCommand(options: any): Promise<void> {
         // Non-fatal conditions — code was accepted by platform, container will start on first request
         const isContainerNotReady =
           statusCode === 404 ||
-          /container.*not running|container.*start|just exited|not running.*start/i.test(detail);
+          statusCode === 503 ||
+          /container.*not running|container.*start|just exited|not running.*start|starting|cold.?start/i.test(detail);
 
         if (isContainerNotReady) {
           // Container not warm yet — skip health verification, deploy is still good

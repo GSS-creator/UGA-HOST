@@ -194,6 +194,14 @@ async function deployCommand(options) {
         spinner.text = 'Reading project files...';
         const code = readProjectFiles(process.cwd(), projectConfig.language, pythonMode);
         const version = generateVersion(code);
+        // Read requirements.txt for Python projects
+        let requirements;
+        if (projectConfig.language === 'python') {
+            const reqPath = path.join(process.cwd(), 'requirements.txt');
+            if (fs.existsSync(reqPath)) {
+                requirements = fs.readFileSync(reqPath, 'utf-8');
+            }
+        }
         let projectId;
         let workerVersion;
         if (isUpdate) {
@@ -202,6 +210,7 @@ async function deployCommand(options) {
             const { data } = await api.post(`/api/backend/projects/${projectConfig.projectId}/redeploy`, {
                 code,
                 version,
+                ...(requirements !== undefined && { requirements }),
             });
             if (!data.success) {
                 throw new Error(data.error || data.message || 'Redeploy failed');
@@ -216,6 +225,7 @@ async function deployCommand(options) {
                 ...projectConfig,
                 code,
                 version,
+                ...(requirements !== undefined && { requirements }),
             });
             if (!data.success) {
                 throw new Error(data.error || data.message || 'Deployment failed');
@@ -248,7 +258,8 @@ async function deployCommand(options) {
                     || '';
                 // Non-fatal conditions — code was accepted by platform, container will start on first request
                 const isContainerNotReady = statusCode === 404 ||
-                    /container.*not running|container.*start|just exited|not running.*start/i.test(detail);
+                    statusCode === 503 ||
+                    /container.*not running|container.*start|just exited|not running.*start|starting|cold.?start/i.test(detail);
                 if (isContainerNotReady) {
                     // Container not warm yet — skip health verification, deploy is still good
                 }
